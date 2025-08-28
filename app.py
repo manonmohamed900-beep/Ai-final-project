@@ -1,33 +1,28 @@
-st.write("🔍 Available columns in dataset:", df.columns)
-
-# نتأكد إن الأعمدة موجودة
-required_cols = ["Temperature", "Humidity", "Wind", "Radiation"]
-for col in required_cols:
-    if col not in df.columns:
-        st.error(f"⚠ Missing column in dataset: {col}")
-
-# نشيل أي صفوف فاضية
-df = df.dropna(subset=required_cols)
-
-# نتأكد كل القيم أرقام
-for col in required_cols:
-    df[col] = pd.to_numeric(df[col], errors="coerce")
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
+import joblib
 
 # =======================
 # Load Data
 # =======================
 @st.cache_data
 def load_data():
-    df = pd.read_csv("cairo_weather.csv")
+    df = pd.read_csv("Cairo-Weather.csv")  # لازم يكون موجود في نفس الفولدر
     return df
 
 df = load_data()
+
+# =======================
+# Load Trained Model
+# =======================
+@st.cache_resource
+def load_model():
+    model = joblib.load("LinearRegression.pkl")  # تحميل الموديل
+    return model
+
+model = load_model()
 
 # =======================
 # Sidebar Navigation
@@ -75,16 +70,6 @@ elif page == "Visualization":
 elif page == "Prediction":
     st.title("🤖 Weather Prediction")
 
-    features = ["Humidity", "Wind", "Radiation"]
-    df = df.dropna(subset=features + ["Temperature"])
-
-    X = df[features]
-    y = df["Temperature"]
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = LinearRegression()
-    model.fit(X_train, y_train)
-
     st.write("Enter weather conditions to predict temperature:")
 
     humidity = st.slider("Humidity (%)", 0, 100, 50)
@@ -128,5 +113,4 @@ elif page == "Report":
 
     fig_report = px.box(df, y="Temperature", title="Temperature Variation")
     st.plotly_chart(fig_report, use_container_width=True)
-
         
