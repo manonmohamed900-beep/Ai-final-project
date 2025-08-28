@@ -1,3 +1,17 @@
+st.write("🔍 Available columns in dataset:", df.columns)
+
+# نتأكد إن الأعمدة موجودة
+required_cols = ["Temperature", "Humidity", "Wind", "Radiation"]
+for col in required_cols:
+    if col not in df.columns:
+        st.error(f"⚠ Missing column in dataset: {col}")
+
+# نشيل أي صفوف فاضية
+df = df.dropna(subset=required_cols)
+
+# نتأكد كل القيم أرقام
+for col in required_cols:
+    df[col] = pd.to_numeric(df[col], errors="coerce")
 import streamlit as st
 import pandas as pd
 import numpy as np
