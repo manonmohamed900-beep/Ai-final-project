@@ -159,56 +159,72 @@ elif page == "Advice":
         st.markdown(f"- {t}")
 
 # ============================
-# Report (Interactive) Page
+# Report (Interactive) Page (Professional Version)
 # ============================
 elif page == "Report (Interactive)":
-    st.title("📑 Interactive Report")
+    st.title("📑 Interactive Weather Report")
 
-    # تأكيد إن الحالة موجودة
+    # Initialize step
     if "step" not in st.session_state:
         st.session_state.step = 1
 
-    # أزرار التحكم
-    col1, col2 = st.columns([1,1])
+    # Navigation buttons with styling
+    col1, col2, col3 = st.columns([1, 2, 1])
     with col1:
-        if st.button("⬅ السابق") and st.session_state.step > 1:
+        if st.button("⬅ Previous", use_container_width=True) and st.session_state.step > 1:
             st.session_state.step -= 1
-    with col2:
-        if st.button("التالي ➡") and st.session_state.step < 5:
+    with col3:
+        if st.button("Next ➡", use_container_width=True) and st.session_state.step < 6:
             st.session_state.step += 1
+
+    st.markdown("---")  # Divider line
 
     step = st.session_state.step
 
-    # عرض الشرائح
+    # Slides content
     if step == 1:
         st.header("✨ Welcome")
-        st.write("مرحبًا بك في تقرير الطقس التفاعلي عن القاهرة 🌸")
-        st.write("استخدم الأزرار للتنقل بين الشرائح ➡⬅")
+        st.write("Welcome to the interactive weather report for *Cairo* 🌸")
+        st.info("Use the navigation buttons at the top to move between slides ➡⬅")
 
     elif step == 2:
         st.header("📂 Dataset Snapshot")
-        st.dataframe(df.head(10))
+        st.write("Here is a quick preview of the dataset (first 10 rows):")
+        st.dataframe(df.head(10), use_container_width=True)
 
     elif step == 3:
         st.header("📊 Descriptive Statistics")
-        st.write(df.describe())
+        st.write("Summary statistics for the dataset:")
+        st.dataframe(df.describe(), use_container_width=True)
 
     elif step == 4:
         st.header("📈 Temperature Trend")
+        st.write("Line chart showing the temperature trend over time:")
         st.line_chart(df['apparent_temperature_mean (°C)'])
 
     elif step == 5:
+        st.header("📊 Advanced Visualization")
+        st.subheader("Bar Chart - Average Temperature (First 20 Days)")
+        st.bar_chart(df['apparent_temperature_mean (°C)'].head(20))
+
+        st.subheader("Histogram - Temperature Distribution")
+        fig = df['apparent_temperature_mean (°C)'].plot(
+            kind='hist', bins=20, title="Temperature Distribution"
+        ).get_figure()
+        st.pyplot(fig)
+
+    elif step == 6:
         st.header("⚡ Key Indicators & Advice")
 
         col1, col2, col3 = st.columns(3)
-        col1.metric("🌡 متوسط الحرارة", f"{df['apparent_temperature_mean (°C)'].mean():.2f} °C")
-        col2.metric("💦 متوسط الرطوبة (dew point)", f"{df['dew_point_2m_mean (°C)'].mean():.2f} °C")
-        col3.metric("☀ ساعات شمس", f"{df['sunshine_duration (s)'].mean()/3600:.1f} h")
+        col1.metric("🌡 Avg Temperature", f"{df['apparent_temperature_mean (°C)'].mean():.2f} °C")
+        col2.metric("💦 Avg Humidity (Dew Point)", f"{df['dew_point_2m_mean (°C)'].mean():.2f} °C")
+        col3.metric("☀ Sunshine Hours", f"{df['sunshine_duration (s)'].mean()/3600:.1f} h")
 
         st.markdown("""
-        ### 💡 نصائح سريعة
-        - 🧥 الجو برد = البس طبقات.  
-        - 🔥 الجو حر = قلل الخروج وقت الظهر.  
-        - 🕶 إشعاع عالي = واقي شمس + نضارة.  
+        ### 💡 Quick Tips
+        - 🧥 *Cold weather* → Wear multiple layers.  
+        - 🔥 *Hot weather* → Avoid going out during midday.  
+        - 🕶 *High UV index* → Use sunscreen + sunglasses.  
         """)
         
