@@ -58,7 +58,7 @@ model = load_model()
 # Sidebar for navigation
 # ============================
 st.sidebar.title("🌸 Navigation")
-page = st.sidebar.radio("Go to", ["Overview", "Prediction"])
+page = st.sidebar.radio("Go to", ["Overview", "Prediction", "Visualization", "Advice"])
 
 # ============================
 # Overview Page
@@ -117,3 +117,65 @@ elif page == "Prediction":
                 st.success(f"✅ Predicted temperature: {pred:.2f} °C")
             except Exception as e:
                 st.error(f"Prediction failed: {e}")
+
+elif page == "Visualization":
+    st.title("📊 Data Visualization")
+
+    if 'df' not in locals() or df is None or df.empty:
+        st.warning("⚠ حمّلي ملف Cairo-Weather.csv جنب app.py وبعدين اعملي Reload.")
+    else:
+        features_all = list(df.columns)
+        y_col = st.selectbox("اختر العمود للرسم:", features_all)
+
+        st.subheader("Trend")
+        st.line_chart(df[y_col])
+
+        st.subheader("Correlation مع متغير مستهدف")
+        target = st.selectbox("اختر المتغير المستهدف:", features_all, index=features_all.index(y_col) if y_col in features_all else 0)
+        num_df = df.select_dtypes(include="number")
+        if target in num_df.columns:
+            corr = num_df.corr()[target].dropna().sort_values(ascending=False)
+            st.bar_chart(corr.rename("correlation"))
+        else:
+            st.info("المتغير المختار مش عددي، مش هينفع نعمل Correlation.")
+
+elif page == "Advice":
+    st.title("💡 Weather Advice")
+
+    # إدخالات بسيطة
+    temp = st.number_input("درجة الحرارة (°C):", value=30.0)
+    radiation = st.number_input("إشعاع شمسي (MJ/m²):", value=25.0)
+    et0 = st.number_input("Evapotranspiration (mm):", value=5.5)
+    dew = st.number_input("Dew Point (°C):", value=12.0)
+    daylight = st.number_input("مدة النهار (ثواني):", value=43000)
+
+    tips = []
+
+    # بناءً على الحرارة
+    if temp < 12:
+        tips.append("🧥 الجو بارد: البس طبقات + جاكيت، سكارف بالليل.")
+    elif temp < 20:
+        tips.append("🧥 لطيف مائل للبرودة: تيشيرت + جاكيت خفيف.")
+    elif temp < 29:
+        tips.append("👕 معتدل/دافي: قطن خفيف واشرب مية كويس.")
+    elif temp < 36:
+        tips.append("🔥 حار: قطن/لينين، كاب، قللي الخروج وقت الظهر.")
+    else:
+        tips.append("🥵 شديد الحرارة: ظل/تكييف، سوائل وإلكتروليتس، قللي المجهود 11ص–4م.")
+
+    # عوامل إضافية
+    if radiation >= 20:
+        tips.append("🕶 إشعاع عالي: واقي شمس SPF 50+ ونضارة.")
+    if et0 >= 6:
+        tips.append("💧 الجو بيسحب رطوبة بسرعة: اشربي مية زيادة.")
+    if dew >= 18:
+        tips.append("💦 رطوبة عالية: اختاري أقمشة ماصّة للعرق وتهوية كويسة.")
+    elif dew <= 5:
+        tips.append("🌵 جفاف عالي: مرطّب للبشرة وشرب مية.")
+    if daylight >= 43000:
+        tips.append("☀ نهار طويل: المجهود يكون قبل 11ص أو بعد 4م.")
+
+    st.subheader("✨ النصايح:")
+    for t in tips:
+        st.markdown(f"- {t}")
+        
