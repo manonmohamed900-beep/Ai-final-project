@@ -58,7 +58,7 @@ model = load_model()
 # Sidebar for navigation
 # ============================
 st.sidebar.title("🌸 Navigation")
-page = st.sidebar.radio("Go to", ["Overview", "Prediction", "Visualization", "Advice"])
+page = st.sidebar.radio("Go to", ["Overview", "Prediction", "Advice", "Report (Interactive)"])
 
 # ============================
 # Overview Page
@@ -118,27 +118,6 @@ elif page == "Prediction":
             except Exception as e:
                 st.error(f"Prediction failed: {e}")
 
-elif page == "Visualization":
-    st.title("📊 Data Visualization")
-
-    if 'df' not in locals() or df is None or df.empty:
-        st.warning("⚠ حمّلي ملف Cairo-Weather.csv جنب app.py وبعدين اعملي Reload.")
-    else:
-        features_all = list(df.columns)
-        y_col = st.selectbox("اختر العمود للرسم:", features_all)
-
-        st.subheader("Trend")
-        st.line_chart(df[y_col])
-
-        st.subheader("Correlation مع متغير مستهدف")
-        target = st.selectbox("اختر المتغير المستهدف:", features_all, index=features_all.index(y_col) if y_col in features_all else 0)
-        num_df = df.select_dtypes(include="number")
-        if target in num_df.columns:
-            corr = num_df.corr()[target].dropna().sort_values(ascending=False)
-            st.bar_chart(corr.rename("correlation"))
-        else:
-            st.info("المتغير المختار مش عددي، مش هينفع نعمل Correlation.")
-
 elif page == "Advice":
     st.title("💡 Weather Advice")
 
@@ -178,4 +157,58 @@ elif page == "Advice":
     st.subheader("✨ النصايح:")
     for t in tips:
         st.markdown(f"- {t}")
+
+# ============================
+# Report (Interactive) Page
+# ============================
+elif page == "Report (Interactive)":
+    st.title("📑 Interactive Report")
+
+    # تأكيد إن الحالة موجودة
+    if "step" not in st.session_state:
+        st.session_state.step = 1
+
+    # أزرار التحكم
+    col1, col2 = st.columns([1,1])
+    with col1:
+        if st.button("⬅ السابق") and st.session_state.step > 1:
+            st.session_state.step -= 1
+    with col2:
+        if st.button("التالي ➡") and st.session_state.step < 5:
+            st.session_state.step += 1
+
+    step = st.session_state.step
+
+    # عرض الشرائح
+    if step == 1:
+        st.header("✨ Welcome")
+        st.write("مرحبًا بك في تقرير الطقس التفاعلي عن القاهرة 🌸")
+        st.write("استخدم الأزرار للتنقل بين الشرائح ➡⬅")
+
+    elif step == 2:
+        st.header("📂 Dataset Snapshot")
+        st.dataframe(df.head(10))
+
+    elif step == 3:
+        st.header("📊 Descriptive Statistics")
+        st.write(df.describe())
+
+    elif step == 4:
+        st.header("📈 Temperature Trend")
+        st.line_chart(df['apparent_temperature_mean (°C)'])
+
+    elif step == 5:
+        st.header("⚡ Key Indicators & Advice")
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("🌡 متوسط الحرارة", f"{df['apparent_temperature_mean (°C)'].mean():.2f} °C")
+        col2.metric("💦 متوسط الرطوبة (dew point)", f"{df['dew_point_2m_mean (°C)'].mean():.2f} °C")
+        col3.metric("☀ ساعات شمس", f"{df['sunshine_duration (s)'].mean()/3600:.1f} h")
+
+        st.markdown("""
+        ### 💡 نصائح سريعة
+        - 🧥 الجو برد = البس طبقات.  
+        - 🔥 الجو حر = قلل الخروج وقت الظهر.  
+        - 🕶 إشعاع عالي = واقي شمس + نضارة.  
+        """)
         
