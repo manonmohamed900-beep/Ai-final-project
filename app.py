@@ -119,44 +119,66 @@ elif page == "Prediction":
                 st.error(f"Prediction failed: {e}")
 
 elif page == "Advice":
-    st.title("💡 Weather Advice")
+    st.title("💡 Interactive Weather Advice (Step-by-Step)")
 
-    # إدخالات بسيطة
-    temp = st.number_input("درجة الحرارة (°C):", value=30.0)
-    radiation = st.number_input("إشعاع شمسي (MJ/m²):", value=25.0)
+    # User inputs
+    temp = st.number_input("Temperature (°C):", value=30.0)
+    radiation = st.number_input("Solar Radiation (MJ/m²):", value=25.0)
     et0 = st.number_input("Evapotranspiration (mm):", value=5.5)
     dew = st.number_input("Dew Point (°C):", value=12.0)
-    daylight = st.number_input("مدة النهار (ثواني):", value=43000)
+    daylight = st.number_input("Daylight Duration (seconds):", value=43000)
 
     tips = []
 
-    # بناءً على الحرارة
+    # Temperature-based advice
     if temp < 12:
-        tips.append("🧥 الجو بارد: البس طبقات + جاكيت، سكارف بالليل.")
+        tips.append(("🧥 Cold", "Wear layers + jacket, scarf at night.", "blue"))
     elif temp < 20:
-        tips.append("🧥 لطيف مائل للبرودة: تيشيرت + جاكيت خفيف.")
+        tips.append(("🧥 Cool", "T-shirt + light jacket.", "lightblue"))
     elif temp < 29:
-        tips.append("👕 معتدل/دافي: قطن خفيف واشرب مية كويس.")
+        tips.append(("👕 Mild/Warm", "Light cotton, stay hydrated.", "green"))
     elif temp < 36:
-        tips.append("🔥 حار: قطن/لينين، كاب، قللي الخروج وقت الظهر.")
+        tips.append(("🔥 Hot", "Cotton/linen, cap, avoid midday sun.", "orange"))
     else:
-        tips.append("🥵 شديد الحرارة: ظل/تكييف، سوائل وإلكتروليتس، قللي المجهود 11ص–4م.")
+        tips.append(("🥵 Extreme Heat", "Stay in shade/AC, hydrate with electrolytes, limit activity 11am–4pm.", "red"))
 
-    # عوامل إضافية
+    # Additional factors
     if radiation >= 20:
-        tips.append("🕶 إشعاع عالي: واقي شمس SPF 50+ ونضارة.")
+        tips.append(("🕶 High UV", "Use SPF 50+ sunscreen + sunglasses.", "orange"))
     if et0 >= 6:
-        tips.append("💧 الجو بيسحب رطوبة بسرعة: اشربي مية زيادة.")
+        tips.append(("💧 Rapid moisture loss", "Drink extra water.", "blue"))
     if dew >= 18:
-        tips.append("💦 رطوبة عالية: اختاري أقمشة ماصّة للعرق وتهوية كويسة.")
+        tips.append(("💦 High humidity", "Wear breathable fabrics, ensure ventilation.", "lightblue"))
     elif dew <= 5:
-        tips.append("🌵 جفاف عالي: مرطّب للبشرة وشرب مية.")
+        tips.append(("🌵 Very dry", "Moisturize skin, drink water.", "brown"))
     if daylight >= 43000:
-        tips.append("☀ نهار طويل: المجهود يكون قبل 11ص أو بعد 4م.")
+        tips.append(("☀ Long day", "Do outdoor activities before 11am or after 4pm.", "yellow"))
 
-    st.subheader("✨ النصايح:")
-    for t in tips:
-        st.markdown(f"- {t}")
+    # Initialize step in session_state
+    if "advice_step" not in st.session_state:
+        st.session_state.advice_step = 0
+
+    # Navigation buttons
+    col1, col2, col3 = st.columns([1,2,1])
+    with col1:
+        if st.button("⬅ Previous") and st.session_state.advice_step > 0:
+            st.session_state.advice_step -= 1
+    with col3:
+        if st.button("Next ➡") and st.session_state.advice_step < len(tips)-1:
+            st.session_state.advice_step += 1
+
+    # Progress bar
+    progress = (st.session_state.advice_step + 1) / max(len(tips),1)
+    st.progress(progress)
+
+    # Display current tip
+    if tips:
+        title, desc, color = tips[st.session_state.advice_step]
+        with st.expander(f"{title}", expanded=True):
+            st.markdown(f"<span style='color:{color}; font-weight:bold'>{desc}</span>", unsafe_allow_html=True)
+        st.caption(f"Tip {st.session_state.advice_step + 1} of {len(tips)}")
+    else:
+        st.info("No tips available for the given inputs.")
 
 # ============================
 # Report (Interactive) Page (Professional Version)
