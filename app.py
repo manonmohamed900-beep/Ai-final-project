@@ -16,6 +16,9 @@ def load_data():
 
 df = load_data()
 
+# Debug: Show column names
+st.write("📌 Columns in the dataset:", df.columns.tolist())
+
 # =======================
 # Sidebar Navigation
 # =======================
@@ -117,7 +120,6 @@ elif page == "Report":
     with col2:
         st.metric("Average Radiation", f"{df['Radiation'].mean():.1f}")
         st.metric("Days Recorded", len(df))
-
-    fig_report = px.box(df, y="Temperature", title="Temperature Variation")
+fig_report = px.box(df, y="Temperature", title="Temperature Variation")
     st.plotly_chart(fig_report, use_container_width=True)
         
