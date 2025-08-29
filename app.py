@@ -121,5 +121,5 @@ elif page == "Report":
         st.metric("Average Radiation", f"{df['Radiation'].mean():.1f}")
         st.metric("Days Recorded", len(df))
 fig_report = px.box(df, y="Temperature", title="Temperature Variation")
-    st.plotly_chart(fig_report, use_container_width=True)
+st.plotly_chart(fig_report, use_container_width=True)
         
