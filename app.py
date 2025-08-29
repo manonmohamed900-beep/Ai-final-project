@@ -1,151 +1,118 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import plotly.express as px
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
 import joblib
 
-# =======================
-# Load Data with Cleaning
-# =======================
+# ============================
+# Page Config & Styling
+# ============================
+st.set_page_config(page_title="Cairo Weather Prediction", page_icon="🌸", layout="wide")
+
+# Custom CSS for pink theme
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #fff0f6;
+    }
+    .stSidebar {
+        background-color: #ffe6f0;
+    }
+    h1, h2, h3 {
+        color: #cc0066;
+    }
+    .footer {
+        text-align: center;
+        margin-top: 50px;
+        color: #cc0066;
+        font-weight: bold;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ============================
+# Load Data & Model
+# ============================
+DATA_PATH = "Cairo-Weather.csv"
+MODEL_PATH = "LinearRegression.pkl"
+
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Cairo-Weather.csv")
+    return pd.read_csv(DATA_PATH)
 
-    # تنظيف أسماء الأعمدة: إزالة مسافات وأحرف كبيرة/صغيرة
-    df.columns = df.columns.str.strip().str.title()  # "Temperature ", "humidity" -> "Temperature", "Humidity"
-
-    # تحويل الأعمدة الرقمية إلى أرقام، وتحويل أي خطأ إلى NaN
-    numeric_cols = ["Temperature", "Humidity", "Wind", "Radiation"]
-    for col in numeric_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-
-    return df
+@st.cache_resource
+def load_model():
+    try:
+        model = joblib.load(MODEL_PATH)
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
 df = load_data()
+model = load_model()
 
-# Debug: Show column names
-st.write("📌 Columns in the dataset:", df.columns.tolist())
+# ============================
+# Sidebar for navigation
+# ============================
+st.sidebar.title("🌸 Navigation")
+page = st.sidebar.radio("Go to", ["Overview", "Prediction"])
 
-# =======================
-# Sidebar Navigation
-# =======================
-st.sidebar.title("🌤 Cairo Weather App")
-page = st.sidebar.radio("Go to", ["Overview", "Visualization", "Prediction", "Advice", "Report"])
-
-# =======================
+# ============================
 # Overview Page
-# =======================
+# ============================
 if page == "Overview":
-    st.title("🌤 Cairo Weather Overview")
-    st.write("Welcome to the Cairo Weather Dashboard. Explore metrics, charts, and predictions for Cairo's climate.")
+    st.title("🌸 Welcome to Cairo Weather Prediction App")
+    st.write("This app predicts the average daily temperature in Cairo using weather-related features.")
 
-    col1, col2, col3 = st.columns(3)
-    if "Temperature" in df.columns:
-        col1.metric("Max Temp", f"{df['Temperature'].max():.1f} °C")
-        col2.metric("Min Temp", f"{df['Temperature'].min():.1f} °C")
-        col3.metric("Avg Temp", f"{df['Temperature'].mean():.1f} °C")
-    else:
-        col1.metric("Max Temp", "N/A")
-        col2.metric("Min Temp", "N/A")
-        col3.metric("Avg Temp", "N/A")
+    st.subheader("✨ Features Used in the Model")
+    features = [
+        'apparent_temperature_mean (°C)',
+        'et0_fao_evapotranspiration (mm)',
+        'daylight_duration (s)',
+        'shortwave_radiation_sum (MJ/m²)',
+        'dew_point_2m_mean (°C)',
+        'sunshine_duration (s)'
+    ]
+    st.markdown("\n".join([f"- {f}" for f in features]))
 
-    if "Temperature" in df.columns and "Date" in df.columns:
-        fig = px.line(df, x="Date", y="Temperature", title="Temperature Trend Over Time")
-        st.plotly_chart(fig, use_container_width=True)
+    st.subheader("📊 Quick Insights")
+    st.write("Here are some quick stats from the dataset:")
+    st.write(df[features].describe())
 
-# =======================
-# Visualization Page
-# =======================
-elif page == "Visualization":
-    st.title("📊 Data Visualization")
+    st.markdown('<div class="footer">🌸 Developed by Menna Mohamed Rady 🌸</div>', unsafe_allow_html=True)
 
-    if "Temperature" in df.columns:
-        st.subheader("Temperature Distribution")
-        fig1 = px.histogram(df, x="Temperature", nbins=20, title="Temperature Histogram")
-        st.plotly_chart(fig1, use_container_width=True)
-
-    if "Humidity" in df.columns and "Temperature" in df.columns and "Wind" in df.columns:
-        st.subheader("Humidity vs Temperature")
-        fig2 = px.scatter(df, x="Humidity", y="Temperature", color="Wind",
-                          title="Humidity vs Temp (colored by Wind)")
-        st.plotly_chart(fig2, use_container_width=True)
-
-    if "Wind" in df.columns and "Date" in df.columns:
-        st.subheader("Wind Speed Over Time")
-        fig3 = px.line(df, x="Date", y="Wind", title="Wind Speed Trend")
-        st.plotly_chart(fig3, use_container_width=True)
-
-# =======================
+# ============================
 # Prediction Page
-# =======================
+# ============================
 elif page == "Prediction":
-    st.title("🤖 Weather Prediction")
+    st.title("🤖 Temperature Prediction")
+    st.write("Enter feature values to predict the daily average temperature.")
 
-    features = ["Humidity", "Wind", "Radiation"]
-    subset_columns = [col for col in features + ["Temperature"] if col in df.columns]
-    df_clean = df.dropna(subset=subset_columns)
+    features = [
+        'apparent_temperature_mean (°C)',
+        'et0_fao_evapotranspiration (mm)',
+        'daylight_duration (s)',
+        'shortwave_radiation_sum (MJ/m²)',
+        'dew_point_2m_mean (°C)',
+        'sunshine_duration (s)'
+    ]
 
-    if all(col in df_clean.columns for col in features + ["Temperature"]):
-        X = df_clean[features]
-        y = df_clean["Temperature"]
+    input_values = {}
+    cols = st.columns(2)
+    for i, col in enumerate(features):
+        with cols[i % 2]:
+            default_val = float(df[col].mean()) if col in df.columns else 0.0
+            input_values[col] = st.number_input(col, value=default_val)
 
-        # تحميل أو تدريب الموديل
-        try:
-            model = joblib.load("LinearRegression.pkl")
-        except:
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            model = LinearRegression()
-            model.fit(X_train, y_train)
-            joblib.dump(model, "LinearRegression.pkl")
-
-        st.write("Enter weather conditions to predict temperature:")
-
-        humidity = st.slider("Humidity (%)", 0, 100, 50)
-        wind = st.slider("Wind Speed (km/h)", 0, 50, 10)
-        radiation = st.slider("Solar Radiation", 0, 1000, 500)
-
-        input_data = np.array([[humidity, wind, radiation]])
-        prediction = model.predict(input_data)[0]
-
-        st.success(f"🌡 Predicted Temperature: {prediction:.2f} °C")
-    else:
-        st.info("Not enough data to train/predict temperature.")
-
-# =======================
-# Advice Page
-# =======================
-elif page == "Advice":
-    st.title("💡 Weather Advice")
-
-    if "Temperature" in df.columns:
-        avg_temp = df["Temperature"].mean()
-        if avg_temp > 30:
-            st.warning("☀ It's hot! Stay hydrated and avoid the sun at noon.")
-        elif avg_temp < 15:
-            st.info("🧥 It's cold! Wear warm clothes and take care of your health.")
+    if st.button("Predict"):
+        if model is None:
+            st.error("Model not loaded!")
         else:
-            st.success("🌤 The weather is moderate. Enjoy your day outside!")
-    else:
-        st.info("Temperature data not available.")
-
-# =======================
-# Report Page
-# =======================
-elif page == "Report":
-    st.title("📑 Weather Report")
-    st.write("Here’s a summary of Cairo’s climate based on the dataset.")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Average Humidity", f"{df['Humidity'].mean():.1f} %" if "Humidity" in df.columns else "N/A")
-        st.metric("Max Wind Speed", f"{df['Wind'].max():.1f} km/h" if "Wind" in df.columns else "N/A")
-    with col2:
-        st.metric("Average Radiation", f"{df['Radiation'].mean():.1f}" if "Radiation" in df.columns else "N/A")
-        st.metric("Days Recorded", len(df))
-
-    if "Temperature" in df.columns:
-        fig_report = px.box(df, y="Temperature", title="Temperature Variation")
-        st.plotly_chart(fig_report, use_container_width=True)
+            X_new = pd.DataFrame([input_values])
+            try:
+                pred = model.predict(X_new)[0]
+                st.success(f"✅ Predicted temperature: {pred:.2f} °C")
+            except Exception as e:
+                st.error(f"Prediction failed: {e}")
